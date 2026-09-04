@@ -1,0 +1,2935 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Game Catur</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    background:#111827;
+    color:white;
+    font-family:Arial,sans-serif;
+    text-align:center;
+}
+
+h1{
+    margin:16px 0 8px;
+}
+
+.panel{
+    width:min(94vw,600px);
+    margin:auto;
+}
+
+.controls{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:10px 0;
+}
+
+select,
+button{
+    padding:10px 14px;
+    border:none;
+    border-radius:9px;
+    font-size:14px;
+}
+
+button{
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+button:disabled{
+    opacity:.45;
+}
+
+/* PEMAIN */
+
+.players{
+    width:min(94vw,576px);
+    margin:8px auto;
+
+    display:flex;
+    gap:8px;
+}
+
+.player{
+    flex:1;
+
+    background:#1f2937;
+
+    border-radius:10px;
+
+    padding:10px;
+}
+
+.player.active{
+    outline:3px solid #facc15;
+}
+
+
+/* STATUS */
+
+#status{
+    font-size:18px;
+    font-weight:bold;
+    margin:8px;
+}
+
+#moveInfo{
+    min-height:28px;
+}
+
+#thinking{
+    min-height:22px;
+    color:#facc15;
+}
+
+
+/* PAPAN */
+
+.board{
+
+    width:min(94vw,576px);
+    height:min(94vw,576px);
+
+    margin:10px auto;
+
+    display:grid;
+
+    grid-template-columns:repeat(8,1fr);
+    grid-template-rows:repeat(8,1fr);
+
+    border:5px solid #374151;
+
+    border-radius:8px;
+
+    overflow:hidden;
+}
+
+.square{
+
+    position:relative;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    font-size:clamp(
+        30px,
+        8vw,
+        55px
+    );
+
+    cursor:pointer;
+
+    user-select:none;
+}
+
+.light{
+    background:#f0d9b5;
+}
+
+.dark{
+    background:#b58863;
+}
+
+.selected{
+    box-shadow:
+        inset 0 0 0 5px #facc15;
+}
+
+.destination::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:22%;
+    height:22%;
+
+    border-radius:50%;
+
+    background:rgba(
+        34,
+        197,
+        94,
+        .85
+    );
+}
+
+.capture{
+
+    box-shadow:
+        inset 0 0 0 5px #ef4444;
+}
+
+.last-from{
+
+    box-shadow:
+        inset 0 0 0 4px #3b82f6;
+}
+
+.last-to{
+
+    box-shadow:
+        inset 0 0 0 5px #60a5fa;
+}
+
+
+/* KOORDINAT */
+
+.coord{
+
+    position:absolute;
+
+    right:3px;
+    bottom:2px;
+
+    font-size:10px;
+
+    font-weight:bold;
+
+    opacity:.65;
+}
+
+
+/* LABEL */
+
+.fromLabel,
+.toLabel{
+
+    position:absolute;
+
+    top:3px;
+    left:3px;
+
+    font-size:8px;
+
+    font-weight:bold;
+
+    color:white;
+
+    background:rgba(
+        0,
+        0,
+        0,
+        .7
+    );
+
+    padding:3px 4px;
+
+    border-radius:4px;
+
+    z-index:5;
+}
+
+.toLabel{
+    background:#16a34a;
+}
+
+
+/* HASIL GAME */
+
+.resultOverlay{
+
+    display:none;
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(
+        0,
+        0,
+        0,
+        .82
+    );
+
+    z-index:100;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:20px;
+}
+
+.resultOverlay.show{
+    display:flex;
+}
+
+.resultBox{
+
+    width:min(
+        90vw,
+        420px
+    );
+
+    background:#1f2937;
+
+    border-radius:20px;
+
+    padding:30px 20px;
+
+    box-shadow:
+        0 20px 60px
+        rgba(0,0,0,.5);
+
+    animation:pop .35s ease;
+}
+
+@keyframes pop{
+
+    from{
+        transform:scale(.7);
+        opacity:0;
+    }
+
+    to{
+        transform:scale(1);
+        opacity:1;
+    }
+}
+
+#resultIcon{
+
+    font-size:70px;
+
+    margin-bottom:8px;
+}
+
+#resultTitle{
+
+    font-size:36px;
+
+    font-weight:900;
+
+    margin:8px 0;
+}
+
+#resultText{
+
+    font-size:16px;
+
+    color:#d1d5db;
+
+    margin-bottom:20px;
+}
+
+
+/* REPLAY */
+
+.replayBox{
+
+    display:none;
+
+    width:min(94vw,576px);
+
+    margin:12px auto;
+
+    background:#1f2937;
+
+    border-radius:12px;
+
+    padding:12px;
+}
+
+.replayBox.show{
+    display:block;
+}
+
+.replayTitle{
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    margin-bottom:5px;
+}
+
+#replayStatus{
+
+    color:#facc15;
+
+    margin-bottom:6px;
+}
+
+.replayBar{
+
+    width:100%;
+
+    height:8px;
+
+    background:#374151;
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+    margin:8px 0;
+}
+
+#replayProgress{
+
+    width:0%;
+
+    height:100%;
+
+    background:#22c55e;
+
+    transition:width .2s;
+}
+
+.replayControls{
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:7px;
+
+    flex-wrap:wrap;
+}
+
+
+/* HISTORY */
+
+.history{
+
+    width:min(94vw,576px);
+
+    margin:10px auto 30px;
+
+    background:#1f2937;
+
+    border-radius:10px;
+
+    padding:12px;
+
+    text-align:left;
+}
+
+.history h3{
+    margin-top:0;
+}
+
+#moves{
+
+    max-height:180px;
+
+    overflow-y:auto;
+
+    line-height:1.8;
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<h1>♟️ GAME CATUR ♟️</h1>
+
+
+<div class="panel">
+
+
+<div class="controls">
+
+<select id="difficulty">
+
+<option value="easy">
+Mudah
+</option>
+
+<option value="normal" selected>
+Normal
+</option>
+
+<option value="hard">
+Susah
+</option>
+
+</select>
+
+
+<button onclick="newGame()">
+🔄 Game Baru
+</button>
+
+
+<button onclick="enableSound()">
+🔊 Aktifkan Suara
+</button>
+
+</div>
+
+
+<div class="players">
+
+<div
+class="player active"
+id="whitePlayer">
+
+♙ Kamu
+<br>
+
+<small>
+Putih
+</small>
+
+</div>
+
+
+<div
+class="player"
+id="blackPlayer">
+
+♟ Bot
+<br>
+
+<small>
+Hitam
+</small>
+
+</div>
+
+</div>
+
+
+<div id="status">
+Giliran kamu ♙
+</div>
+
+
+<div id="moveInfo">
+Pilih bidak untuk bergerak.
+</div>
+
+
+<div id="thinking"></div>
+
+
+<div
+id="board"
+class="board">
+</div>
+
+
+<!-- REPLAY -->
+
+<div
+id="replayBox"
+class="replayBox">
+
+<div class="replayTitle">
+🎬 REPLAY PERTANDINGAN
+</div>
+
+<div id="replayStatus">
+Pertandingan selesai!
+</div>
+
+
+<div class="replayBar">
+
+<div
+id="replayProgress">
+</div>
+
+</div>
+
+
+<div class="replayControls">
+
+<button onclick="startReplay()">
+▶️ Mulai
+</button>
+
+<button onclick="toggleReplay()">
+⏯️ Pause/Lanjut
+</button>
+
+<button onclick="nextReplayMove()">
+⏭️ Berikutnya
+</button>
+
+<button onclick="restartReplay()">
+🔄 Ulangi
+</button>
+
+</div>
+
+</div>
+
+
+<div class="history">
+
+<h3>
+📜 Riwayat Langkah
+</h3>
+
+<div id="moves">
+Belum ada langkah.
+</div>
+
+</div>
+
+
+</div>
+
+
+<!-- HASIL PERTANDINGAN -->
+
+<div
+id="resultOverlay"
+class="resultOverlay">
+
+<div class="resultBox">
+
+<div id="resultIcon">
+🏆
+</div>
+
+<div id="resultTitle">
+KAMU MENANG!
+</div>
+
+<div id="resultText">
+Pertandingan selesai.
+</div>
+
+
+<button onclick="closeResult()">
+Lihat Papan
+</button>
+
+<button onclick="showReplayFromResult()">
+🎬 Replay
+</button>
+
+<button onclick="newGame()">
+🔄 Main Lagi
+</button>
+
+</div>
+
+</div>
+
+
+
+<script>
+
+
+/* =================================================
+   SUARA
+================================================= */
+
+let audioCtx=null;
+
+let soundEnabled=false;
+
+
+function enableSound(){
+
+    soundEnabled=true;
+
+    if(!audioCtx){
+
+        audioCtx=
+        new (
+            window.AudioContext ||
+            window.webkitAudioContext
+        )();
+
+    }
+
+
+    if(
+        audioCtx.state==="suspended"
+    ){
+
+        audioCtx.resume();
+
+    }
+
+
+    tone(
+        600,
+        .08
+    );
+}
+
+
+function tone(
+    freq,
+    duration,
+    type="sine",
+    volume=.08
+){
+
+    if(!soundEnabled)
+        return;
+
+    if(!audioCtx)
+        return;
+
+
+    const osc=
+        audioCtx.createOscillator();
+
+    const gain=
+        audioCtx.createGain();
+
+
+    osc.type=type;
+
+    osc.frequency.value=freq;
+
+
+    gain.gain.setValueAtTime(
+        volume,
+        audioCtx.currentTime
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+        .001,
+        audioCtx.currentTime+
+        duration
+    );
+
+
+    osc.connect(gain);
+
+    gain.connect(
+        audioCtx.destination
+    );
+
+
+    osc.start();
+
+
+    osc.stop(
+        audioCtx.currentTime+
+        duration
+    );
+}
+
+
+function moveSound(){
+
+    tone(
+        420,
+        .07,
+        "triangle",
+        .09
+    );
+}
+
+
+function captureSound(){
+
+    tone(
+        180,
+        .12,
+        "square",
+        .1
+    );
+
+
+    setTimeout(
+        ()=>{
+            tone(
+                120,
+                .1,
+                "square",
+                .07
+            );
+        },
+        70
+    );
+}
+
+
+function checkSound(){
+
+    tone(
+        700,
+        .12
+    );
+
+
+    setTimeout(
+        ()=>{
+            tone(
+                900,
+                .16
+            );
+        },
+        130
+    );
+}
+
+
+function mateSound(){
+
+    tone(
+        500,
+        .15,
+        "triangle"
+    );
+
+
+    setTimeout(
+        ()=>{
+            tone(
+                650,
+                .15,
+                "triangle"
+            );
+        },
+        160
+    );
+
+
+    setTimeout(
+        ()=>{
+            tone(
+                850,
+                .3,
+                "triangle"
+            );
+        },
+        320
+    );
+}
+
+
+
+/* =================================================
+   BIDAK
+================================================= */
+
+const symbols={
+
+    wp:"♙",
+    wr:"♖",
+    wn:"♘",
+    wb:"♗",
+    wq:"♕",
+    wk:"♔",
+
+    bp:"♟",
+    br:"♜",
+    bn:"♞",
+    bb:"♝",
+    bq:"♛",
+    bk:"♚"
+
+};
+
+
+const value={
+
+    p:100,
+    n:320,
+    b:330,
+    r:500,
+    q:900,
+    k:20000
+
+};
+
+
+
+/* =================================================
+   STATE
+================================================= */
+
+let board;
+
+let selected=null;
+
+let turn="w";
+
+let gameOver=false;
+
+let lastMove=null;
+
+let moveHistory=[];
+
+let replayMoves=[];
+
+let replayBoard=null;
+
+let replayIndex=0;
+
+let replayTimer=null;
+
+let replayPlaying=false;
+
+
+
+/* =================================================
+   BOARD AWAL
+================================================= */
+
+function createInitialBoard(){
+
+    return [
+
+        [
+            "br",
+            "bn",
+            "bb",
+            "bq",
+            "bk",
+            "bb",
+            "bn",
+            "br"
+        ],
+
+        [
+            "bp",
+            "bp",
+            "bp",
+            "bp",
+            "bp",
+            "bp",
+            "bp",
+            "bp"
+        ],
+
+        [
+            null,null,null,null,
+            null,null,null,null
+        ],
+
+        [
+            null,null,null,null,
+            null,null,null,null
+        ],
+
+        [
+            null,null,null,null,
+            null,null,null,null
+        ],
+
+        [
+            null,null,null,null,
+            null,null,null,null
+        ],
+
+        [
+            "wp",
+            "wp",
+            "wp",
+            "wp",
+            "wp",
+            "wp",
+            "wp",
+            "wp"
+        ],
+
+        [
+            "wr",
+            "wn",
+            "wb",
+            "wq",
+            "wk",
+            "wb",
+            "wn",
+            "wr"
+        ]
+
+    ];
+}
+
+
+
+/* =================================================
+   GAME BARU
+================================================= */
+
+function newGame(){
+
+    stopReplay();
+
+
+    board=
+        createInitialBoard();
+
+
+    selected=null;
+
+    turn="w";
+
+    gameOver=false;
+
+    lastMove=null;
+
+    moveHistory=[];
+
+    replayMoves=[];
+
+
+    document
+    .getElementById(
+        "replayBox"
+    )
+    .classList.remove(
+        "show"
+    );
+
+
+    document
+    .getElementById(
+        "resultOverlay"
+    )
+    .classList.remove(
+        "show"
+    );
+
+
+    document
+    .getElementById(
+        "status"
+    )
+    .innerHTML=
+        "Giliran kamu ♙";
+
+
+    document
+    .getElementById(
+        "moveInfo"
+    )
+    .innerHTML=
+        "Pilih bidak untuk bergerak.";
+
+
+    document
+    .getElementById(
+        "thinking"
+    )
+    .innerHTML="";
+
+
+    updatePlayers();
+
+    updateHistory();
+
+    render();
+}
+
+
+
+/* =================================================
+   RENDER
+================================================= */
+
+function render(
+    highlights=[]
+){
+
+    const el=
+        document.getElementById(
+            "board"
+        );
+
+
+    el.innerHTML="";
+
+
+    for(
+        let r=0;
+        r<8;
+        r++
+    ){
+
+        for(
+            let c=0;
+            c<8;
+            c++
+        ){
+
+            const sq=
+                document.createElement(
+                    "div"
+                );
+
+
+            sq.className=
+                "square "+
+                (
+                    (r+c)%2===0
+                    ?"light"
+                    :"dark"
+                );
+
+
+            const piece=
+                board[r][c];
+
+
+            if(piece){
+
+                sq.textContent=
+                    symbols[piece];
+
+            }
+
+
+            const coord=
+                document.createElement(
+                    "span"
+                );
+
+
+            coord.className=
+                "coord";
+
+
+            coord.textContent=
+                squareName(r,c);
+
+
+            sq.appendChild(
+                coord
+            );
+
+
+            if(
+                selected &&
+                selected.r===r &&
+                selected.c===c
+            ){
+
+                sq.classList.add(
+                    "selected"
+                );
+
+
+                const label=
+                    document.createElement(
+                        "span"
+                    );
+
+
+                label.className=
+                    "fromLabel";
+
+
+                label.textContent=
+                    "DARI";
+
+
+                sq.appendChild(
+                    label
+                );
+            }
+
+
+            for(
+                const h of highlights
+            ){
+
+                if(
+                    h.r===r &&
+                    h.c===c
+                ){
+
+                    if(
+                        h.capture
+                    ){
+
+                        sq.classList.add(
+                            "capture"
+                        );
+
+                    }else{
+
+                        sq.classList.add(
+                            "destination"
+                        );
+                    }
+
+
+                    const label=
+                        document.createElement(
+                            "span"
+                        );
+
+
+                    label.className=
+                        "toLabel";
+
+
+                    label.textContent=
+                        "KE";
+
+
+                    sq.appendChild(
+                        label
+                    );
+                }
+            }
+
+
+            if(
+                lastMove &&
+                lastMove.from.r===r &&
+                lastMove.from.c===c
+            ){
+
+                sq.classList.add(
+                    "last-from"
+                );
+            }
+
+
+            if(
+                lastMove &&
+                lastMove.to.r===r &&
+                lastMove.to.c===c
+            ){
+
+                sq.classList.add(
+                    "last-to"
+                );
+            }
+
+
+            sq.onclick=
+                ()=>{
+                    clickSquare(r,c);
+                };
+
+
+            el.appendChild(
+                sq
+            );
+        }
+    }
+}
+
+
+
+/* =================================================
+   KOORDINAT
+================================================= */
+
+function squareName(r,c){
+
+    return (
+        "abcdefgh"[c]
+        +
+        (8-r)
+    );
+}
+
+
+
+/* =================================================
+   KLIK PAPAN
+================================================= */
+
+function clickSquare(r,c){
+
+    if(gameOver)
+        return;
+
+
+    if(turn!=="w")
+        return;
+
+
+    const piece=
+        board[r][c];
+
+
+    if(!selected){
+
+        if(
+            piece &&
+            piece[0]==="w"
+        ){
+
+            selected={r,c};
+
+
+            const moves=
+                getLegalMoves(
+                    board,
+                    r,
+                    c,
+                    "w"
+                );
+
+
+            render(
+                moves.map(
+                    m=>({
+                        ...m,
+                        capture:
+                            !!board[
+                                m.r
+                            ][
+                                m.c
+                            ]
+                    })
+                )
+            );
+        }
+
+
+        return;
+    }
+
+
+    const moves=
+        getLegalMoves(
+            board,
+            selected.r,
+            selected.c,
+            "w"
+        );
+
+
+    const target=
+        moves.find(
+            m=>
+                m.r===r &&
+                m.c===c
+        );
+
+
+    if(target){
+
+        const from=
+            {...selected};
+
+
+        makeMove(
+            from,
+            target,
+            true
+        );
+
+
+        selected=null;
+
+
+        if(!gameOver){
+
+            setTimeout(
+                botMove,
+                500
+            );
+        }
+
+
+        return;
+    }
+
+
+    if(
+        piece &&
+        piece[0]==="w"
+    ){
+
+        selected={r,c};
+
+
+        const newMoves=
+            getLegalMoves(
+                board,
+                r,
+                c,
+                "w"
+            );
+
+
+        render(
+            newMoves.map(
+                m=>({
+                    ...m,
+                    capture:
+                        !!board[
+                            m.r
+                        ][
+                            m.c
+                        ]
+                })
+            )
+        );
+
+    }else{
+
+        selected=null;
+
+        render();
+    }
+}
+
+
+
+/* =================================================
+   LEGAL MOVES
+================================================= */
+
+function getLegalMoves(
+    b,
+    r,
+    c,
+    color
+){
+
+    const piece=
+        b[r][c];
+
+
+    if(
+        !piece ||
+        piece[0]!==color
+    )
+        return [];
+
+
+    const pseudo=
+        getPseudoMoves(
+            b,r,c
+        );
+
+
+    const legal=[];
+
+
+    for(
+        const move of pseudo
+    ){
+
+        const copy=
+            cloneBoard(b);
+
+
+        applyMove(
+            copy,
+            {r,c},
+            move
+        );
+
+
+        if(
+            !isKingInCheck(
+                copy,
+                color
+            )
+        ){
+
+            legal.push(
+                move
+            );
+        }
+    }
+
+
+    return legal;
+}
+
+
+
+/* =================================================
+   PSEUDO MOVE
+================================================= */
+
+function getPseudoMoves(
+    b,
+    r,
+    c
+){
+
+    const piece=
+        b[r][c];
+
+
+    if(!piece)
+        return [];
+
+
+    const color=
+        piece[0];
+
+    const type=
+        piece[1];
+
+
+    const moves=[];
+
+
+    function add(nr,nc){
+
+        if(
+            !inside(nr,nc)
+        )
+            return;
+
+
+        if(
+            !b[nr][nc] ||
+            b[nr][nc][0]!==color
+        ){
+
+            moves.push({
+                r:nr,
+                c:nc
+            });
+        }
+    }
+
+
+    /* PAWN */
+
+    if(type==="p"){
+
+        const dir=
+            color==="w"
+            ?-1
+            :1;
+
+
+        const start=
+            color==="w"
+            ?6
+            :1;
+
+
+        if(
+            inside(r+dir,c) &&
+            !b[r+dir][c]
+        ){
+
+            moves.push({
+                r:r+dir,
+                c:c
+            });
+
+
+            if(
+                r===start &&
+                !b[r+2*dir][c]
+            ){
+
+                moves.push({
+                    r:r+2*dir,
+                    c:c
+                });
+            }
+        }
+
+
+        for(
+            const dc of [-1,1]
+        ){
+
+            const nr=
+                r+dir;
+
+            const nc=
+                c+dc;
+
+
+            if(
+                inside(nr,nc) &&
+                b[nr][nc] &&
+                b[nr][nc][0]!==color
+            ){
+
+                moves.push({
+                    r:nr,
+                    c:nc
+                });
+            }
+        }
+    }
+
+
+    /* KNIGHT */
+
+    if(type==="n"){
+
+        const jumps=[
+
+            [-2,-1],
+            [-2,1],
+
+            [-1,-2],
+            [-1,2],
+
+            [1,-2],
+            [1,2],
+
+            [2,-1],
+            [2,1]
+
+        ];
+
+
+        jumps.forEach(
+            ([dr,dc])=>
+                add(
+                    r+dr,
+                    c+dc
+                )
+        );
+    }
+
+
+    /* BISHOP / ROOK / QUEEN */
+
+    if(
+        type==="b" ||
+        type==="r" ||
+        type==="q"
+    ){
+
+        let dirs=[];
+
+
+        if(
+            type==="b" ||
+            type==="q"
+        ){
+
+            dirs.push(
+
+                [-1,-1],
+                [-1,1],
+
+                [1,-1],
+                [1,1]
+
+            );
+        }
+
+
+        if(
+            type==="r" ||
+            type==="q"
+        ){
+
+            dirs.push(
+
+                [-1,0],
+                [1,0],
+
+                [0,-1],
+                [0,1]
+
+            );
+        }
+
+
+        for(
+            const [dr,dc]
+            of dirs
+        ){
+
+            let nr=
+                r+dr;
+
+            let nc=
+                c+dc;
+
+
+            while(
+                inside(nr,nc)
+            ){
+
+                if(
+                    !b[nr][nc]
+                ){
+
+                    moves.push({
+                        r:nr,
+                        c:nc
+                    });
+
+                }else{
+
+                    if(
+                        b[nr][nc][0]!==color
+                    ){
+
+                        moves.push({
+                            r:nr,
+                            c:nc
+                        });
+                    }
+
+                    break;
+                }
+
+
+                nr+=dr;
+
+                nc+=dc;
+            }
+        }
+    }
+
+
+    /* KING */
+
+    if(type==="k"){
+
+        for(
+            let dr=-1;
+            dr<=1;
+            dr++
+        ){
+
+            for(
+                let dc=-1;
+                dc<=1;
+                dc++
+            ){
+
+                if(
+                    dr!==0 ||
+                    dc!==0
+                ){
+
+                    add(
+                        r+dr,
+                        c+dc
+                    );
+                }
+            }
+        }
+    }
+
+
+    return moves;
+}
+
+
+
+/* =================================================
+   CHECK
+================================================= */
+
+function isKingInCheck(
+    b,
+    color
+){
+
+    let king=null;
+
+
+    for(
+        let r=0;
+        r<8;
+        r++
+    ){
+
+        for(
+            let c=0;
+            c<8;
+            c++
+        ){
+
+            if(
+                b[r][c]===color+"k"
+            ){
+
+                king={
+                    r,
+                    c
+                };
+            }
+        }
+    }
+
+
+    if(!king)
+        return true;
+
+
+    const enemy=
+        color==="w"
+        ?"b"
+        :"w";
+
+
+    for(
+        let r=0;
+        r<8;
+        r++
+    ){
+
+        for(
+            let c=0;
+            c<8;
+            c++
+        ){
+
+            if(
+                b[r][c] &&
+                b[r][c][0]===enemy
+            ){
+
+                const moves=
+                    getPseudoMoves(
+                        b,
+                        r,
+                        c
+                    );
+
+
+                if(
+                    moves.some(
+                        m=>
+                            m.r===king.r &&
+                            m.c===king.c
+                    )
+                ){
+
+                    return true;
+                }
+            }
+        }
+    }
+
+
+    return false;
+}
+
+
+
+/* =================================================
+   SEMUA LEGAL MOVE
+================================================= */
+
+function allLegalMoves(
+    b,
+    color
+){
+
+    const result=[];
+
+
+    for(
+        let r=0;
+        r<8;
+        r++
+    ){
+
+        for(
+            let c=0;
+            c<8;
+            c++
+        ){
+
+            if(
+                b[r][c] &&
+                b[r][c][0]===color
+            ){
+
+                const moves=
+                    getLegalMoves(
+                        b,
+                        r,
+                        c,
+                        color
+                    );
+
+
+                for(
+                    const to of moves
+                ){
+
+                    result.push({
+
+                        from:{
+                            r,
+                            c
+                        },
+
+                        to
+
+                    });
+                }
+            }
+        }
+    }
+
+
+    return result;
+}
+
+
+
+/* =================================================
+   MAKE MOVE
+================================================= */
+
+function makeMove(
+    from,
+    to,
+    playerMove
+){
+
+    const captured=
+        board[to.r][to.c];
+
+
+    const piece=
+        board[from.r][from.c];
+
+
+    applyMove(
+        board,
+        from,
+        to
+    );
+
+
+    /* PROMOSI */
+
+    if(
+        piece[1]==="p" &&
+        (
+            to.r===0 ||
+            to.r===7
+        )
+    ){
+
+        board[to.r][to.c]=
+            piece[0]+"q";
+    }
+
+
+    lastMove={
+
+        from:{...from},
+
+        to:{...to}
+
+    };
+
+
+    /* SIMPAN REPLAY */
+
+    replayMoves.push({
+
+        from:{...from},
+
+        to:{...to},
+
+        piece:piece,
+
+        captured:
+            captured || null
+
+    });
+
+
+    /* SOUND */
+
+    if(captured){
+
+        captureSound();
+
+    }else{
+
+        moveSound();
+    }
+
+
+    const fromName=
+        squareName(
+            from.r,
+            from.c
+        );
+
+
+    const toName=
+        squareName(
+            to.r,
+            to.c
+        );
+
+
+    const who=
+        playerMove
+        ?"Kamu"
+        :"Bot";
+
+
+    document
+    .getElementById(
+        "moveInfo"
+    )
+    .innerHTML=
+        `<b>${who}:</b>
+        ${fromName} → ${toName}`;
+
+
+    moveHistory.push(
+        `${who}: ${fromName} → ${toName}`
+    );
+
+
+    updateHistory();
+
+
+    turn=
+        turn==="w"
+        ?"b"
+        :"w";
+
+
+    updatePlayers();
+
+    render();
+
+    checkGameState();
+}
+
+
+
+/* =================================================
+   BOT
+================================================= */
+
+function botMove(){
+
+    if(gameOver)
+        return;
+
+
+    if(turn!=="b")
+        return;
+
+
+    document
+    .getElementById(
+        "thinking"
+    )
+    .innerHTML=
+        "🤖 Bot sedang berpikir...";
+
+
+    setTimeout(
+        ()=>{
+
+            const moves=
+                allLegalMoves(
+                    board,
+                    "b"
+                );
+
+
+            if(!moves.length){
+
+                checkGameState();
+
+                return;
+            }
+
+
+            const difficulty=
+                document
+                .getElementById(
+                    "difficulty"
+                )
+                .value;
+
+
+            let chosen;
+
+
+            if(
+                difficulty==="easy"
+            ){
+
+                chosen=
+                    moves[
+                        Math.floor(
+                            Math.random()*
+                            moves.length
+                        )
+                    ];
+
+            }
+
+            else if(
+                difficulty==="normal"
+            ){
+
+                chosen=
+                    chooseNormalMove(
+                        moves
+                    );
+
+            }
+
+            else{
+
+                chosen=
+                    chooseHardMove(
+                        moves
+                    );
+            }
+
+
+            document
+            .getElementById(
+                "thinking"
+            )
+            .innerHTML="";
+
+
+            makeMove(
+                chosen.from,
+                chosen.to,
+                false
+            );
+
+        },
+        600
+    );
+}
+
+
+
+/* =================================================
+   BOT NORMAL
+================================================= */
+
+function chooseNormalMove(
+    moves
+){
+
+    const captures=
+        moves.filter(
+            m=>
+                board[
+                    m.to.r
+                ][
+                    m.to.c
+                ]
+        );
+
+
+    if(captures.length){
+
+        return captures[
+            Math.floor(
+                Math.random()*
+                captures.length
+            )
+        ];
+    }
+
+
+    return moves[
+        Math.floor(
+            Math.random()*
+            moves.length
+        )
+    ];
+}
+
+
+
+/* =================================================
+   BOT SUSAH
+================================================= */
+
+function chooseHardMove(
+    moves
+){
+
+    let best=-Infinity;
+
+    let bestMoves=[];
+
+
+    for(
+        const move of moves
+    ){
+
+        const copy=
+            cloneBoard(
+                board
+            );
+
+
+        applyMove(
+            copy,
+            move.from,
+            move.to
+        );
+
+
+        let score=
+            evaluate(copy);
+
+
+        if(
+            board[
+                move.to.r
+            ][
+                move.to.c
+            ]
+        ){
+
+            score+=
+                value[
+                    board[
+                        move.to.r
+                    ][
+                        move.to.c
+                    ][1]
+                ];
+        }
+
+
+        if(
+            score>best
+        ){
+
+            best=score;
+
+            bestMoves=[
+                move
+            ];
+
+        }
+
+        else if(
+            score===best
+        ){
+
+            bestMoves.push(
+                move
+            );
+        }
+    }
+
+
+    return bestMoves[
+        Math.floor(
+            Math.random()*
+            bestMoves.length
+        )
+    ];
+}
+
+
+
+/* =================================================
+   EVALUATE
+================================================= */
+
+function evaluate(b){
+
+    let score=0;
+
+
+    for(
+        let r=0;
+        r<8;
+        r++
+    ){
+
+        for(
+            let c=0;
+            c<8;
+            c++
+        ){
+
+            const p=
+                b[r][c];
+
+
+            if(!p)
+                continue;
+
+
+            const v=
+                value[p[1]];
+
+
+            if(
+                p[0]==="b"
+            ){
+
+                score+=v;
+
+            }else{
+
+                score-=v;
+            }
+        }
+    }
+
+
+    return score;
+}
+
+
+
+/* =================================================
+   APPLY
+================================================= */
+
+function applyMove(
+    b,
+    from,
+    to
+){
+
+    b[to.r][to.c]=
+        b[from.r][from.c];
+
+
+    b[from.r][from.c]=
+        null;
+}
+
+
+
+/* =================================================
+   CEK HASIL GAME
+================================================= */
+
+function checkGameState(){
+
+    const moves=
+        allLegalMoves(
+            board,
+            turn
+        );
+
+
+    const check=
+        isKingInCheck(
+            board,
+            turn
+        );
+
+
+    if(!moves.length){
+
+        gameOver=true;
+
+
+        if(check){
+
+            mateSound();
+
+
+            if(turn==="w"){
+
+                /* KAMU KALAH */
+
+                showResult(
+                    "💀",
+                    "KAMU KALAH!",
+                    "Bot berhasil melakukan checkmate."
+                );
+
+                document
+                .getElementById(
+                    "status"
+                )
+                .innerHTML=
+                    "💀 KAMU KALAH!";
+
+            }else{
+
+                /* KAMU MENANG */
+
+                showResult(
+                    "🏆",
+                    "KAMU MENANG!",
+                    "Kamu berhasil melakukan checkmate!"
+                );
+
+                document
+                .getElementById(
+                    "status"
+                )
+                .innerHTML=
+                    "🏆 KAMU MENANG!";
+            }
+
+
+        }else{
+
+            /* REMIS */
+
+            showResult(
+                "🤝",
+                "REMIS!",
+                "Tidak ada langkah legal yang tersedia."
+            );
+
+
+            document
+            .getElementById(
+                "status"
+            )
+            .innerHTML=
+                "🤝 REMIS!";
+        }
+
+
+        setTimeout(
+            showReplay,
+            500
+        );
+
+
+        return;
+    }
+
+
+    if(check){
+
+        checkSound();
+
+
+        document
+        .getElementById(
+            "status"
+        )
+        .innerHTML=
+            turn==="w"
+            ?"⚠️ KAMU CHECK!"
+            :"⚠️ BOT CHECK!";
+
+    }else{
+
+        document
+        .getElementById(
+            "status"
+        )
+        .innerHTML=
+            turn==="w"
+            ?"Giliran kamu ♙"
+            :"Giliran bot ♟";
+    }
+}
+
+
+
+/* =================================================
+   HASIL
+================================================= */
+
+function showResult(
+    icon,
+    title,
+    text
+){
+
+    document
+    .getElementById(
+        "resultIcon"
+    )
+    .innerHTML=
+        icon;
+
+
+    document
+    .getElementById(
+        "resultTitle"
+    )
+    .innerHTML=
+        title;
+
+
+    document
+    .getElementById(
+        "resultText"
+    )
+    .innerHTML=
+        text;
+
+
+    document
+    .getElementById(
+        "resultOverlay"
+    )
+    .classList.add(
+        "show"
+    );
+}
+
+
+function closeResult(){
+
+    document
+    .getElementById(
+        "resultOverlay"
+    )
+    .classList.remove(
+        "show"
+    );
+}
+
+
+function showReplayFromResult(){
+
+    closeResult();
+
+
+    document
+    .getElementById(
+        "replayBox"
+    )
+    .scrollIntoView({
+        behavior:"smooth"
+    });
+}
+
+
+
+/* =================================================
+   REPLAY
+================================================= */
+
+function showReplay(){
+
+    document
+    .getElementById(
+        "replayBox"
+    )
+    .classList.add(
+        "show"
+    );
+
+
+    document
+    .getElementById(
+        "replayStatus"
+    )
+    .innerHTML=
+        `🎬 ${replayMoves.length}
+        langkah tersimpan — siap direplay!`;
+}
+
+
+function startReplay(){
+
+    stopReplay();
+
+
+    replayBoard=
+        createInitialBoard();
+
+
+    replayIndex=0;
+
+    lastMove=null;
+
+
+    renderReplayBoard();
+
+
+    replayPlaying=true;
+
+
+    document
+    .getElementById(
+        "replayStatus"
+    )
+    .innerHTML=
+        "▶️ Replay berjalan...";
+
+
+    replayTimer=
+        setInterval(
+            nextReplayMove,
+            900
+        );
+}
+
+
+function toggleReplay(){
+
+    if(
+        !replayMoves.length
+    )
+        return;
+
+
+    if(replayPlaying){
+
+        clearInterval(
+            replayTimer
+        );
+
+
+        replayPlaying=false;
+
+
+        document
+        .getElementById(
+            "replayStatus"
+        )
+        .innerHTML=
+            "⏸️ Replay dijeda.";
+
+    }else{
+
+        replayPlaying=true;
+
+
+        replayTimer=
+            setInterval(
+                nextReplayMove,
+                900
+            );
+
+
+        document
+        .getElementById(
+            "replayStatus"
+        )
+        .innerHTML=
+            "▶️ Replay berjalan...";
+    }
+}
+
+
+function nextReplayMove(){
+
+    if(
+        !replayMoves.length
+    )
+        return;
+
+
+    if(
+        replayIndex>=
+        replayMoves.length
+    ){
+
+        stopReplay();
+
+
+        document
+        .getElementById(
+            "replayStatus"
+        )
+        .innerHTML=
+            "🏁 Replay selesai!";
+
+
+        return;
+    }
+
+
+    const move=
+        replayMoves[
+            replayIndex
+        ];
+
+
+    const captured=
+        replayBoard[
+            move.to.r
+        ][
+            move.to.c
+        ];
+
+
+    applyMove(
+        replayBoard,
+        move.from,
+        move.to
+    );
+
+
+    /* PROMOSI */
+
+    if(
+        move.piece[1]==="p" &&
+        (
+            move.to.r===0 ||
+            move.to.r===7
+        )
+    ){
+
+        replayBoard[
+            move.to.r
+        ][
+            move.to.c
+        ]=
+            move.piece[0]+"q";
+    }
+
+
+    lastMove={
+
+        from:{
+            ...move.from
+        },
+
+        to:{
+            ...move.to
+        }
+
+    };
+
+
+    if(captured){
+
+        captureSound();
+
+    }else{
+
+        moveSound();
+    }
+
+
+    replayIndex++;
+
+
+    renderReplayBoard();
+
+
+    const who=
+        move.piece[0]==="w"
+        ?"Kamu"
+        :"Bot";
+
+
+    const from=
+        squareName(
+            move.from.r,
+            move.from.c
+        );
+
+
+    const to=
+        squareName(
+            move.to.r,
+            move.to.c
+        );
+
+
+    document
+    .getElementById(
+        "replayStatus"
+    )
+    .innerHTML=
+        `🎬 ${who}: ${from} → ${to}`;
+
+
+    const progress=
+        (
+            replayIndex/
+            replayMoves.length
+        )*100;
+
+
+    document
+    .getElementById(
+        "replayProgress"
+    )
+    .style.width=
+        progress+"%";
+}
+
+
+function renderReplayBoard(){
+
+    const original=
+        board;
+
+
+    board=
+        replayBoard;
+
+
+    render();
+
+
+    board=
+        original;
+}
+
+
+function restartReplay(){
+
+    stopReplay();
+
+
+    replayBoard=
+        createInitialBoard();
+
+
+    replayIndex=0;
+
+    lastMove=null;
+
+
+    document
+    .getElementById(
+        "replayProgress"
+    )
+    .style.width=
+        "0%";
+
+
+    renderReplayBoard();
+
+
+    document
+    .getElementById(
+        "replayStatus"
+    )
+    .innerHTML=
+        "🔄 Replay kembali ke posisi awal.";
+}
+
+
+function stopReplay(){
+
+    if(replayTimer){
+
+        clearInterval(
+            replayTimer
+        );
+
+        replayTimer=null;
+    }
+
+
+    replayPlaying=false;
+}
+
+
+
+/* =================================================
+   HISTORY
+================================================= */
+
+function updateHistory(){
+
+    const el=
+        document
+        .getElementById(
+            "moves"
+        );
+
+
+    if(
+        !moveHistory.length
+    ){
+
+        el.innerHTML=
+            "Belum ada langkah.";
+
+        return;
+    }
+
+
+    el.innerHTML=
+        moveHistory
+        .map(
+            (m,i)=>
+                `${i+1}. ${m}`
+        )
+        .join("<br>");
+}
+
+
+
+/* =================================================
+   PLAYERS
+================================================= */
+
+function updatePlayers(){
+
+    document
+    .getElementById(
+        "whitePlayer"
+    )
+    .classList.toggle(
+        "active",
+        turn==="w"
+    );
+
+
+    document
+    .getElementById(
+        "blackPlayer"
+    )
+    .classList.toggle(
+        "active",
+        turn==="b"
+    );
+}
+
+
+
+/* =================================================
+   UTILITAS
+================================================= */
+
+function inside(r,c){
+
+    return(
+        r>=0 &&
+        r<8 &&
+        c>=0 &&
+        c<8
+    );
+}
+
+
+function cloneBoard(b){
+
+    return b.map(
+        row=>[...row]
+    );
+}
+
+
+
+/* =================================================
+   MULAI
+================================================= */
+
+newGame();
+
+</script>
+
+</body>
+</html>
